@@ -1,0 +1,55 @@
+cmake_minimum_required (VERSION 3.15)	
+
+enable_language(CXX)
+
+set (CMAKE_CONFIGURATION_TYPES "Debug;Release")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
+
+project(FlyinstinctFeaturesMatcher LANGUAGES CXX)
+
+#-------------------------------------------------------------------------------------------------------------------
+# GET SOURCES
+#-------------------------------------------------------------------------------------------------------------------
+file(GLOB_RECURSE FlyinstinctFeaturesMatcher_src LIST_DIRECTORIES false 
+
+		"${FlyinstinctFeaturesMatcher_SOURCE_DIR}/*.cpp" 
+		"${FlyinstinctFeaturesMatcher_SOURCE_DIR}/*.c"
+		"${FlyinstinctFeaturesMatcher_SOURCE_DIR}/*.h")
+
+add_executable(FlyinstinctFeaturesMatcher ${FlyinstinctFeaturesMatcher_src})
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FlyinstinctFeaturesMatcher)
+
+set_property(TARGET FlyinstinctFeaturesMatcher PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+foreach(src IN ITEMS ${FlyinstinctFeaturesMatcher_src})
+    get_filename_component(src_path "${src}" PATH)
+    file(RELATIVE_PATH rel_path "${FlyinstinctFeaturesMatcher_SOURCE_DIR}" "${src_path}")	
+    string(REPLACE "/" "\\" group_path "${rel_path}")
+    source_group("${group_path}" FILES "${src}")
+    target_include_directories(FlyinstinctFeaturesMatcher PUBLIC "${src_path}/")
+endforeach()
+
+#-------------------------------------------------------------------------------------------------------------------
+# LINK OPENCV DEPENDENCIES
+#-------------------------------------------------------------------------------------------------------------------
+find_package( OpenCV REQUIRED)
+if (OpenCV_FOUND)
+  target_link_libraries(FlyinstinctFeaturesMatcher ${OpenCV_LIBS})
+else ()
+  message(FATAL_ERROR "opencv not found")
+endif ()
+
+
+#-------------------------------------------------------------------------------------------------------------------
+# PREPROCESSOR 
+#-------------------------------------------------------------------------------------------------------------------
+add_definitions(-DUNICODE)
+add_definitions(-D_X64_MACHINE)
+
+#-------------------------------------------------------------------------------------------------------------------
+# POST BUILD 
+#-------------------------------------------------------------------------------------------------------------------
+#OpenCV
+get_target_property(opencvDLL opencv_world IMPORTED_LOCATION_RELEASE)
+add_custom_command(TARGET FlyinstinctFeaturesMatcher PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${opencvDLL} $<TARGET_FILE_DIR:FlyinstinctFeaturesMatcher>)
